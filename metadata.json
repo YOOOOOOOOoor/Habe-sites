@@ -1,0 +1,8 @@
+{
+  "name": "Habesha Sites — Website Content Editor",
+  "description": "A calm, intuitive website content editor for Ethiopian cafés and restaurants to customize pages, menus, imagery, design, and publishing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
