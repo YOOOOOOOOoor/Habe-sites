@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Check,
   ChevronRight,
+  ExternalLink,
   Eye,
   EyeOff,
   Globe,
@@ -11,6 +12,7 @@ import {
   Save,
   Smartphone,
   Tablet,
+  X,
 } from 'lucide-react';
 import {
   INITIAL_MEDIA_ASSETS,
@@ -39,6 +41,7 @@ import { DesignEditor } from './components/editor/DesignEditor';
 import { SettingsEditor } from './components/editor/SettingsEditor';
 import { ImageLibraryContent, ImagePickerModal } from './components/editor/ImageLibrary';
 import { LiveWebsitePreview } from './components/preview/LiveWebsitePreview';
+import { PublicCafeSitePage } from './components/public/PublicCafeSitePage';
 import {
   AccountSettingsView,
   WorkspaceDashboardView,
@@ -60,6 +63,18 @@ function loadStoredJson<T>(key: string, fallback: T): T {
   }
 }
 
+function loadReconciledMediaAssets(): MediaAsset[] {
+  const stored = loadStoredJson<MediaAsset[]>(STORAGE_KEY_MEDIA, INITIAL_MEDIA_ASSETS);
+  const builtinById = new Map(INITIAL_MEDIA_ASSETS.map((a) => [a.id, a]));
+  return stored.map((asset) => {
+    const builtin = builtinById.get(asset.id);
+    if (builtin && !asset.isCustomUpload) {
+      return { ...asset, url: builtin.url };
+    }
+    return asset;
+  });
+}
+
 const SECTION_LABELS: Record<EditorSection, string[]> = {
   home: ['Home'],
   'home-hero': ['Home', 'Hero'],
@@ -74,6 +89,11 @@ const SECTION_LABELS: Record<EditorSection, string[]> = {
 };
 
 export default function App() {
+  // Client-side route state for public /site/:slug URLs
+  const [currentPath, setCurrentPath] = useState<string>(() =>
+    typeof window !== 'undefined' ? window.location.pathname : '/'
+  );
+
   // Global layout state
   const [globalArea, setGlobalArea] = useState<GlobalArea>('websites');
   const [globalSidebarExpanded, setGlobalSidebarExpanded] = useState(false);
@@ -99,12 +119,13 @@ export default function App() {
     loadStoredJson<CafeWebsiteData | null>(STORAGE_KEY_PUBLISHED, INITIAL_SITE_DATA)
   );
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>(() =>
-    loadStoredJson<MediaAsset[]>(STORAGE_KEY_MEDIA, INITIAL_MEDIA_ASSETS)
+    loadReconciledMediaAssets()
   );
 
   // Feedback & modal states
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [justPublishedUrl, setJustPublishedUrl] = useState<string | null>(null);
 
   // Reusable Image Picker Modal state
   const [imagePickerState, setImagePickerState] = useState<{
@@ -113,6 +134,32 @@ export default function App() {
     currentId?: string | null;
     onPick?: (asset: MediaAsset) => void;
   }>({ open: false, title: 'Choose Image' });
+
+  const navigateToPath = (path: string) => {
+    if (typeof window !== 'undefined' && window.location.pathname !== path) {
+      window.history.pushState({}, '', path);
+    }
+    setCurrentPath(path);
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
+    };
+    const handleStorageSync = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY_PUBLISHED) {
+        setPublishedData(loadStoredJson<CafeWebsiteData | null>(STORAGE_KEY_PUBLISHED, null));
+      } else if (e.key === STORAGE_KEY_MEDIA) {
+        setMediaAssets(loadReconciledMediaAssets());
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('storage', handleStorageSync);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('storage', handleStorageSync);
+    };
+  }, []);
 
   // Persist draft & media assets locally
   useEffect(() => {
@@ -164,10 +211,12 @@ export default function App() {
 
   const handleConfirmPublish = () => {
     const nowIso = new Date().toISOString();
+    const cleanSlug = draftData.settings.slug.trim() || 'sample-cafe';
     const nextPublished: CafeWebsiteData = {
       ...draftData,
       settings: {
         ...draftData.settings,
+        slug: cleanSlug,
         isPublished: true,
         lastPublishedAt: nowIso,
       },
@@ -183,6 +232,7 @@ export default function App() {
       // ignore
     }
     setPublishDialogOpen(false);
+    setJustPublishedUrl(`/site/${cleanSlug}`);
     showToast('Website published live');
   };
 
@@ -200,7 +250,7 @@ export default function App() {
     setPreviewMode('draft');
     try {
       localStorage.setItem(STORAGE_KEY_SAVED, JSON.stringify(nextDraft));
-      localStorage.removeItem(STORAGE_KEY_PUBLISHED);
+      localStorage.setItem(STORAGE_KEY_PUBLISHED, 'null');
     } catch {
       // ignore
     }
@@ -394,6 +444,24 @@ export default function App() {
         return null;
     }
   };
+
+  const siteOrigin =
+    typeof window !== 'undefined' ? window.location.origin : 'https://habeshasites.com';
+  const liveSlug = draftData.settings.slug.trim() || 'sample-cafe';
+  const liveSitePath = `/site/${liveSlug}`;
+  const fullLiveUrl = `${siteOrigin}${liveSitePath}`;
+
+  // If browsing a public published route (/site/:slug...), render the public café site directly
+  if (currentPath.startsWith('/site/')) {
+    return (
+      <PublicCafeSitePage
+        pathname={currentPath}
+        publishedData={publishedData}
+        mediaAssets={mediaAssets}
+        onNavigatePath={navigateToPath}
+      />
+    );
+  }
 
   return (
     <div className="h-screen w-screen overflow-hidden flex bg-[#F8F9FA] text-[#111827]">
@@ -610,6 +678,8 @@ export default function App() {
             mediaAssets={mediaAssets}
             hasUnsavedChanges={hasUnsavedChanges}
             hasUnpublishedChanges={hasUnpublishedChanges}
+            isLive={Boolean(publishedData && publishedData.settings.isPublished)}
+            onVisitLiveSite={(path) => navigateToPath(path)}
             onOpenEditor={(sec) => {
               if (sec) handleSelectEditorSection(sec);
               setGlobalArea('websites');
@@ -690,6 +760,7 @@ export default function App() {
                   previewMode={previewMode}
                   onPreviewModeChange={setPreviewMode}
                   hasPublishedVersion={publishedData !== null}
+                  onOpenPublishedSite={(path) => navigateToPath(path)}
                 />
               </section>
             </div>
@@ -724,11 +795,8 @@ export default function App() {
         onCancel={() => setPublishDialogOpen(false)}
         extraContent={
           <div className="p-3 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] text-xs space-y-1">
-            <p className="font-medium text-[#111827]">
-              Public URL:{' '}
-              <span className="font-mono text-[#1E3A2F]">
-                habeshasites.com/site/{draftData.settings.slug || 'sample-cafe'}
-              </span>
+            <p className="font-medium text-[#111827] break-all">
+              Live URL: <span className="font-mono text-[#1E3A2F]">{fullLiveUrl}</span>
             </p>
             <p className="text-[#6B7280]">
               {hasUnsavedChanges
@@ -738,6 +806,75 @@ export default function App() {
           </div>
         }
       />
+
+      {/* Published Confirmation Modal with direct Live URL links */}
+      {justPublishedUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#111827]/45 backdrop-blur-[2px]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="published-live-title"
+        >
+          <div className="w-full max-w-md bg-white rounded-2xl border border-[#E5E7EB] shadow-xl overflow-hidden">
+            <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-2">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-[#1E3A2F]/10 text-[#1E3A2F] flex items-center justify-center">
+                  <Check className="w-4 h-4" />
+                </div>
+                <h2 id="published-live-title" className="text-base font-semibold text-[#111827]">
+                  Your website is live
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setJustPublishedUrl(null)}
+                className="p-1 rounded-lg text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6]"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="px-6 pb-5 space-y-3">
+              <p className="text-sm text-[#4B5563] leading-relaxed">
+                Your latest changes are now published and ready to view at:
+              </p>
+              <div className="p-3 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] text-xs font-mono text-[#1E3A2F] break-all">
+                {siteOrigin}
+                {justPublishedUrl}
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2 px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB]">
+              <button
+                type="button"
+                onClick={() => setJustPublishedUrl(null)}
+                className="px-3.5 py-2 text-xs font-medium text-[#374151] bg-white border border-[#D1D5DB] rounded-lg hover:bg-[#F3F4F6]"
+              >
+                Continue Editing
+              </button>
+              <a
+                href={justPublishedUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-[#111827] bg-white border border-[#D1D5DB] rounded-lg hover:bg-[#F3F4F6]"
+              >
+                <span>Open in New Tab</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = justPublishedUrl;
+                  setJustPublishedUrl(null);
+                  navigateToPath(target);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-[#1E3A2F] rounded-lg hover:bg-[#162C23]"
+              >
+                <span>View Live Site</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   ArrowRight,
   Check,
+  ExternalLink,
   Globe,
   Palette,
   RotateCcw,
@@ -16,16 +17,23 @@ export function WorkspaceDashboardView({
   mediaAssets,
   hasUnsavedChanges,
   hasUnpublishedChanges,
+  isLive,
+  onVisitLiveSite,
   onOpenEditor,
 }: {
   siteData: CafeWebsiteData;
   mediaAssets: MediaAsset[];
   hasUnsavedChanges: boolean;
   hasUnpublishedChanges: boolean;
+  isLive?: boolean;
+  onVisitLiveSite?: (path: string) => void;
   onOpenEditor: (section?: EditorSection) => void;
 }) {
   const heroImg = resolveMediaAsset(mediaAssets, siteData.hero.imageId);
   const featuredCount = siteData.menuItems.filter((i) => i.featured).length;
+  const sitePath = `/site/${siteData.settings.slug || 'sample-cafe'}`;
+  const siteHost =
+    typeof window !== 'undefined' ? window.location.host : 'habeshasites.com';
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#F8F9FA] p-6 md:p-10">
@@ -65,8 +73,9 @@ export function WorkspaceDashboardView({
               <h2 className="text-xl font-semibold text-[#111827]">
                 {siteData.settings.websiteName}
               </h2>
-              <p className="text-xs font-mono text-[#4B5563]">
-                habeshasites.com/site/{siteData.settings.slug}
+              <p className="text-xs font-mono text-[#4B5563] break-all">
+                {siteHost}
+                {sitePath}
               </p>
               <p className="text-xs text-[#6B7280] pt-1">
                 {hasUnsavedChanges
@@ -91,6 +100,16 @@ export function WorkspaceDashboardView({
               >
                 Edit Menu ({siteData.menuItems.length} items)
               </button>
+              {isLive && onVisitLiveSite && (
+                <button
+                  type="button"
+                  onClick={() => onVisitLiveSite(sitePath)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2.5 text-sm font-medium text-[#1E3A2F] hover:bg-[#1E3A2F]/8 rounded-lg transition-colors"
+                >
+                  <span>Visit Live Site</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
         </div>

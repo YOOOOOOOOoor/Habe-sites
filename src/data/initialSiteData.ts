@@ -1,44 +1,50 @@
 import { CafeWebsiteData, MediaAsset, TypographyPairId } from '../types/editor';
+import heroCafeImg from '../assets/images/hero_ethiopian_cafe_1794267011565.jpg';
+import aboutRoastingImg from '../assets/images/about_coffee_roasting_1794267011138.jpg';
+import menuJebenaImg from '../assets/images/menu_jebena_buna_1794267011333.jpg';
+import menuMacchiatoImg from '../assets/images/menu_macchiato_spiced_1794267012393.jpg';
+import menuChechebsaImg from '../assets/images/menu_dabo_breakfast_1794267012585.jpg';
+import galleryBaristaImg from '../assets/images/gallery_cafe_counter_1794267013521.jpg';
 
 export const INITIAL_MEDIA_ASSETS: MediaAsset[] = [
   {
     id: 'img-hero-cafe',
-    url: '/src/assets/images/hero_ethiopian_cafe_1794267011565.jpg',
+    url: heroCafeImg,
     title: 'Sunlit Café Dining Room & Espresso Bar',
     alt: 'Modern Ethiopian specialty coffee house interior with warm oak tables and traditional clay jebena pots on a stone counter',
     category: 'Interior',
   },
   {
     id: 'img-about-roasting',
-    url: '/src/assets/images/about_coffee_roasting_1794267011138.jpg',
+    url: aboutRoastingImg,
     title: 'Freshly Roasted Yirgacheffe & Jebena',
     alt: 'Freshly roasted Ethiopian coffee beans in a woven basket beside a black clay jebena pot and porcelain cini cups',
     category: 'Coffee',
   },
   {
     id: 'img-menu-jebena',
-    url: '/src/assets/images/menu_jebena_buna_1794267011333.jpg',
+    url: menuJebenaImg,
     title: 'Traditional Jebena Buna Ceremony',
     alt: 'Ethiopian jebena coffee ceremony served on a slate tray with two porcelain cini cups and toasted barley snack',
     category: 'Coffee',
   },
   {
     id: 'img-menu-macchiato',
-    url: '/src/assets/images/menu_macchiato_spiced_1794267012393.jpg',
+    url: menuMacchiatoImg,
     title: 'Cardamom Spiced Macchiato & Pastry',
     alt: 'Layered Ethiopian spiced macchiato in a ribbed glass cup beside a honey sesame pastry on a stoneware saucer',
     category: 'Coffee',
   },
   {
     id: 'img-menu-chechebsa',
-    url: '/src/assets/images/menu_dabo_breakfast_1794267012585.jpg',
+    url: menuChechebsaImg,
     title: 'Honey Niter Kibbeh Chechebsa',
     alt: 'Warm Ethiopian chechebsa flatbread pieces glazed with spiced butter and honey in a clay bowl',
     category: 'Food',
   },
   {
     id: 'img-gallery-barista',
-    url: '/src/assets/images/gallery_cafe_counter_1794267013521.jpg',
+    url: galleryBaristaImg,
     title: 'Pour-Over Coffee Counter',
     alt: 'Barista preparing single-origin pour-over coffee at a minimalist walnut and brushed stone bar',
     category: 'Interior',

@@ -38,6 +38,9 @@ export function SettingsEditor({
   const seoTitleLen = settings.seoTitle.length;
   const seoDescLen = settings.seoDescription.length;
   const invalidSlug = !settings.slug.trim();
+  const currentHost =
+    typeof window !== 'undefined' ? window.location.host : 'habeshasites.com';
+  const livePath = `/site/${settings.slug || 'sample-cafe'}`;
 
   return (
     <div className="space-y-8">
@@ -76,8 +79,8 @@ export function SettingsEditor({
             Website slug (public URL)
           </label>
           <div className="flex items-stretch rounded-lg border border-[#D1D5DB] bg-white overflow-hidden focus-within:ring-2 focus-within:ring-[#1E3A2F]">
-            <span className="px-3 py-2.5 text-xs font-mono text-[#6B7280] bg-[#F9FAFB] border-r border-[#E5E7EB] flex items-center whitespace-nowrap">
-              habeshasites.com/site/
+            <span className="px-3 py-2.5 text-xs font-mono text-[#6B7280] bg-[#F9FAFB] border-r border-[#E5E7EB] flex items-center whitespace-nowrap max-w-[50%] truncate">
+              {currentHost}/site/
             </span>
             <input
               id="settings-slug"
@@ -195,7 +198,8 @@ export function SettingsEditor({
             <span>Search Result Preview</span>
           </div>
           <p className="text-xs text-[#1E3A2F] font-mono truncate">
-            habeshasites.com/site/{settings.slug || 'sample-cafe'}
+            {currentHost}
+            {livePath}
           </p>
           <p className="text-sm font-medium text-[#1D4ED8] truncate">
             {settings.seoTitle || settings.websiteName || 'Your Café Website'}
@@ -263,15 +267,25 @@ export function SettingsEditor({
             </p>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             {settings.isPublished && (
-              <button
-                type="button"
-                onClick={() => setConfirmUnpublish(true)}
-                className="px-3.5 py-2 text-xs font-medium text-[#374151] bg-white border border-[#D1D5DB] rounded-lg hover:bg-[#F9FAFB] whitespace-nowrap"
-              >
-                Unpublish
-              </button>
+              <>
+                <a
+                  href={livePath}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2 text-xs font-medium text-[#1E3A2F] bg-[#1E3A2F]/8 rounded-lg hover:bg-[#1E3A2F]/15 whitespace-nowrap"
+                >
+                  Open Live Site
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setConfirmUnpublish(true)}
+                  className="px-3.5 py-2 text-xs font-medium text-[#374151] bg-white border border-[#D1D5DB] rounded-lg hover:bg-[#F9FAFB] whitespace-nowrap"
+                >
+                  Unpublish
+                </button>
+              </>
             )}
             <button
               type="button"
